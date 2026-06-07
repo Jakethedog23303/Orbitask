@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reminder Orbit</title>
+<style>
+  :root{
+    --bg:#0f172a;
+    --card:#111827;
+    --soft:#1f2937;
+    --text:#f8fafc;
+    --muted:#94a3b8;
+    --line:#334155;
+    --accent:#a7f3d0;
+    --accent2:#38bdf8;
+    --danger:#fb7185;
+    --warn:#fbbf24;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 55%);
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .app{
+    width:min(720px, 100%);
+  }
+  .top{
+    text-align:center;
+    margin-bottom:20px;
+  }
+  .badge{
+    display:inline-flex;
+    padding:8px 12px;
+    background:rgba(167,243,208,.1);
+    border:1px solid rgba(167,243,208,.25);
+    border-radius:999px;
+    color:var(--accent);
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:.04em;
+  }
+  h1{font-size:42px;margin:16px 0 6px;line-height:1}
+  p{color:var(--muted);margin:0;line-height:1.5}
+  .card{
+    background:rgba(17,24,39,.88);
+    border:1px solid rgba(148,163,184,.18);
+    box-shadow:0 30px 80px rgba(0,0,0,.35);
+    border-radius:28px;
+    padding:24px;
+    backdrop-filter: blur(10px);
+  }
+  textarea, input{
+    width:100%;
+    border:none;
+    outline:none;
+    border-radius:18px;
+    background:#020617;
+    color:var(--text);
+    border:1px solid var(--line);
+    padding:16px;
+    font-size:17px;
+  }
+  textarea{min-height:190px;resize:vertical;line-height:1.5}
+  .hint{font-size:14px;color:var(--muted);margin:10px 0 18px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  button{
+    border:none;
+    cursor:pointer;
+    border-radius:16px;
+    padding:14px 18px;
+    font-size:16px;
+    font-weight:800;
+    color:#06121f;
+    background:var(--accent);
+    transition:.15s transform, .15s opacity, .15s background;
+  }
+  button:hover{transform:translateY(-1px)}
+  button.secondary{background:#e0f2fe;color:#082f49}
+  button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  button.warn{background:var(--warn);color:#271900}
+  button.danger{background:var(--danger);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .hidden{display:none!important}
+  .orbit-screen{text-align:center}
+  .progress-wrap{margin:8px 0 22px}
+  .progress-text{color:var(--muted);font-weight:700;margin-bottom:8px}
+  .bar{height:10px;background:#020617;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.25s}
+  .current-label{color:var(--accent);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:900;margin-top:18px}
+  .current-task{
+    min-height:170px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:44px;
+    font-weight:900;
+    line-height:1.08;
+    padding:22px;
+    margin:12px 0 20px;
+    border-radius:26px;
+    background:#020617;
+    border:1px solid var(--line);
+  }
+  .completed-list{
+    margin-top:18px;
+    border-top:1px solid var(--line);
+    padding-top:16px;
+    text-align:left;
+  }
+  .completed-list h3{font-size:15px;color:var(--muted);margin:0 0 10px;text-transform:uppercase;letter-spacing:.08em}
+  .completed-item{padding:10px 0;border-bottom:1px solid rgba(51,65,85,.5);color:#cbd5e1}
+  .small-mode{
+    margin-top:14px;
+    background:rgba(251,191,36,.08);
+    border:1px solid rgba(251,191,36,.25);
+    border-radius:20px;
+    padding:14px;
+    text-align:left;
+  }
+  .small-mode label{display:block;color:var(--warn);font-weight:900;margin-bottom:8px}
+  .task-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{padding:8px 10px;background:#020617;border:1px solid var(--line);border-radius:999px;color:#cbd5e1;font-size:14px}
+  .finish h2{font-size:38px;margin:4px 0 8px;text-align:center}
+  @media(max-width:560px){
+    h1{font-size:34px}.card{padding:18px;border-radius:22px}.current-task{font-size:34px;min-height:150px}.row button{flex:1 1 100%}
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <div class="top">
+      <div class="badge">REMINDER ORBIT</div>
+      <h1>Only the next task.</h1>
+      <p>Put in today’s tasks. Start the orbit. The mountain disappears.</p>
+    </div>
+
+    <section id="setup" class="card">
+      <h2>Today’s task list</h2>
+      <p class="hint">Write one task per line. Put them in the order you want to do them.</p>
+      <textarea id="taskInput" placeholder="Example:\nBrush teeth\nPut washing in machine\nEmail tutor\nBuy milk\nRead Spanish for 10 minutes"></textarea>
+      <div class="row">
+        <button id="startBtn">Start Orbit</button>
+        <button class="ghost" id="loadExampleBtn">Load Example</button>
+        <button class="ghost danger" id="clearSavedBtn">Clear Saved Day</button>
+      </div>
+      <div id="preview" class="task-preview"></div>
+    </section>
+
+    <section id="orbit" class="card orbit-screen hidden">
+      <div class="progress-wrap">
+        <div id="progressText" class="progress-text">Orbit 1 / 1</div>
+        <div class="bar"><div id="progressFill" class="fill"></div></div>
+      </div>
+      <div class="current-label">Current Orbit</div>
+      <div id="currentTask" class="current-task">Task</div>
+      <div class="row">
+        <button id="doneBtn">Done</button>
+        <button class="secondary" id="smallerBtn">Make Smaller</button>
+        <button class="ghost" id="skipBtn">Skip</button>
+        <button class="ghost danger" id="resetBtn">Reset</button>
+      </div>
+      <div id="smallMode" class="small-mode hidden">
+        <label>Break this into tiny actions</label>
+        <input id="tinyInput" placeholder="Example: walk into kitchen" />
+        <div class="row">
+          <button class="warn" id="replaceTinyBtn">Use Tiny Step</button>
+          <button class="ghost" id="cancelTinyBtn">Cancel</button>
+        </div>
+      </div>
+      <div class="completed-list">
+        <h3>Completed</h3>
+        <div id="completedList"></div>
+      </div>
+    </section>
+
+    <section id="finished" class="card finish hidden">
+      <h2>Orbit complete.</h2>
+      <p style="text-align:center">You finished today’s visible loop.</p>
+      <div class="row">
+        <button id="newDayBtn">Create New Day</button>
+        <button class="ghost" id="reviewBtn">Review Completed</button>
+      </div>
+      <div id="finalCompleted" class="completed-list hidden"></div>
+    </section>
+  </main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let tasks = [];
+  let completed = [];
+  let index = 0;
+
+  function save(){
+    localStorage.setItem('reminderOrbit', JSON.stringify({tasks, completed, index}));
+  }
+  function load(){
+    try{
+      const data = JSON.parse(localStorage.getItem('reminderOrbit') || 'null');
+      if(data && Array.isArray(data.tasks)){
+        tasks = data.tasks; completed = data.completed || []; index = data.index || 0;
+        if(tasks.length && index < tasks.length) showOrbit();
+      }
+    }catch(e){}
+  }
+  function parseTasks(){
+    return $('taskInput').value.split('\n').map(t => t.trim()).filter(Boolean);
+  }
+  function updatePreview(){
+    const items = parseTasks();
+    $('preview').innerHTML = items.slice(0,8).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('');
+  }
+  function escapeHtml(str){
+    return str.replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  }
+  function startOrbit(){
+    tasks = parseTasks();
+    completed = [];
+    index = 0;
+    if(!tasks.length){
+      $('taskInput').focus();
+      return;
+    }
+    save();
+    showOrbit();
+  }
+  function showOrbit(){
+    $('setup').classList.add('hidden');
+    $('finished').classList.add('hidden');
+    $('orbit').classList.remove('hidden');
+    $('smallMode').classList.add('hidden');
+    render();
+  }
+  function render(){
+    if(index >= tasks.length){ finish(); return; }
+    $('currentTask').textContent = tasks[index];
+    $('progressText').textContent = `Orbit ${index + 1} / ${tasks.length}`;
+    $('progressFill').style.width = `${Math.round((index / tasks.length) * 100)}%`;
+    $('completedList').innerHTML = completed.length ? completed.map(t => `<div class="completed-item">✓ ${escapeHtml(t)}</div>`).join('') : `<p class="hint">Nothing completed yet.</p>`;
+    save();
+  }
+  function finish(){
+    $('orbit').classList.add('hidden');
+    $('finished').classList.remove('hidden');
+    $('progressFill').style.width = '100%';
+    $('finalCompleted').innerHTML = `<h3>Completed Today</h3>` + completed.map(t => `<div class="completed-item">✓ ${escapeHtml(t)}</div>`).join('');
+    save();
+  }
+  function done(){
+    completed.push(tasks[index]);
+    index++;
+    render();
+  }
+  function skip(){
+    const skipped = tasks.splice(index,1)[0];
+    tasks.push(skipped);
+    render();
+  }
+  function resetAll(){
+    localStorage.removeItem('reminderOrbit');
+    tasks = []; completed = []; index = 0;
+    $('orbit').classList.add('hidden');
+    $('finished').classList.add('hidden');
+    $('setup').classList.remove('hidden');
+  }
+  function useTinyStep(){
+    const tiny = $('tinyInput').value.trim();
+    if(!tiny) return;
+    tasks.splice(index, 0, tiny);
+    $('tinyInput').value = '';
+    $('smallMode').classList.add('hidden');
+    render();
+  }
+
+  $('taskInput').addEventListener('input', updatePreview);
+  $('startBtn').addEventListener('click', startOrbit);
+  $('doneBtn').addEventListener('click', done);
+  $('skipBtn').addEventListener('click', skip);
+  $('resetBtn').addEventListener('click', resetAll);
+  $('clearSavedBtn').addEventListener('click', resetAll);
+  $('smallerBtn').addEventListener('click', () => $('smallMode').classList.remove('hidden'));
+  $('cancelTinyBtn').addEventListener('click', () => $('smallMode').classList.add('hidden'));
+  $('replaceTinyBtn').addEventListener('click', useTinyStep);
+  $('newDayBtn').addEventListener('click', resetAll);
+  $('reviewBtn').addEventListener('click', () => $('finalCompleted').classList.toggle('hidden'));
+  $('loadExampleBtn').addEventListener('click', () => {
+    $('taskInput').value = `Brush teeth\nDrink water\nPut washing in machine\nEmail tutor\nBuy milk\nRead Spanish for 10 minutes\nClean one surface\nPack gym bag`;
+    updatePreview();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(!$('orbit').classList.contains('hidden') && e.key === 'Enter' && !e.target.matches('input, textarea')) done();
+  });
+  load();
+</script>
+</body>
+</html>
